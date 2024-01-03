@@ -7,7 +7,10 @@ public class MapDisplay : MonoBehaviour
 {
     [SerializeField]
     Renderer textureRenderer;
-
+    [SerializeField]
+    MeshFilter meshFilter;
+    [SerializeField]
+    MeshRenderer meshRenderer;
     //map을 실제로 전달하여 Renderer에 텍스처를 입혀줌 
     public void DrawTexture(Texture2D texture)
     {
@@ -24,6 +27,12 @@ public class MapDisplay : MonoBehaviour
         //나중에 삭제!
         textureRenderer.transform.localScale = new Vector3(texture.width, 1, texture.height);
         #endregion
+    }
+
+    public void DrawMesh(Mesh meshData,Texture2D texture)
+    {
+        meshFilter.sharedMesh= meshData;
+        meshRenderer.sharedMaterial.mainTexture= texture; 
     }
 
 }

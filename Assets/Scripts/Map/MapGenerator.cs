@@ -20,14 +20,16 @@ public class MapGenerator : MonoBehaviour
     public enum DrawMode {
         ColorMap,
         NoiseMap,
+        MeshMap,
     };
+
+    public const int mapChunkSize = 241; //(241-1)/i;
+    [Range(0,6)] //2의 곱셈
+    public int levelOfDetail; //240의 인수, 1,2,4,6,8,10,12 => 자세하게 나옴
 
     public DrawMode drawMode;
     // Vector2 -float형 ( mapWidth,mapHeight )
-    [SerializeField]
-    int mapWidth;
-    [SerializeField] 
-    int mapHeight;
+
     [SerializeField]
     float noiseScale;
     [SerializeField]
@@ -39,6 +41,11 @@ public class MapGenerator : MonoBehaviour
     float persistance;
     [SerializeField]
     float lacunarity;
+
+    [SerializeField]
+    float meshHeightMultiplier;
+
+    public AnimationCurve meshHeightCurve; //LOD
     public bool autoUpdate;
 
     public int seed;
@@ -48,12 +55,12 @@ public class MapGenerator : MonoBehaviour
     public void GenerateMap()
     {
         //노이즈를 생성한 맵을 가져온다.
-        float[,] noiseMap=Noise.GenerateNoiseMap(mapWidth, mapHeight,seed, noiseScale, octaves,persistance,lacunarity,offset);
+        float[,] noiseMap=Noise.GenerateNoiseMap(mapChunkSize, mapChunkSize, seed, noiseScale, octaves,persistance,lacunarity,offset);
 
-        Color[] colorMap = new Color[mapWidth * mapHeight];
-        for (int y=0;y<mapHeight;y++)
+        Color[] colorMap = new Color[mapChunkSize * mapChunkSize];
+        for (int y=0;y< mapChunkSize; y++)
         {
-            for(int x=0;x<mapWidth;x++)
+            for(int x=0;x< mapChunkSize; x++)
             {
                 //regions에서 지정한 height과 같은 map은 색상을 변경
                 float currentHeight=noiseMap[x, y];
@@ -63,7 +70,7 @@ public class MapGenerator : MonoBehaviour
                     if (currentHeight <= regions[i].height)
                     {
                         //(현재행)*열+현재열
-                        colorMap[y * mapWidth + x] = regions[i].color;
+                        colorMap[y * mapChunkSize + x] = regions[i].color;
                         break;
                     }
                 }
@@ -76,23 +83,20 @@ public class MapGenerator : MonoBehaviour
         }
         else if(drawMode==DrawMode.ColorMap)
         {
-            mapDisplay.DrawTexture(TextureGenerator.TextureFromColourMap(colorMap, mapWidth, mapHeight));
+            mapDisplay.DrawTexture(TextureGenerator.TextureFromColourMap(colorMap, mapChunkSize, mapChunkSize));
+        }else if(drawMode==DrawMode.MeshMap)
+        {
+            //컬러 색상 전달 , 높이값을 가진 noiseMap을 이용해 Mesh를 생성하여 그린다.
+            mapDisplay.DrawMesh(MeshGenerator.GenerateTerrainMesh(noiseMap, meshHeightMultiplier,meshHeightCurve,levelOfDetail).CreateMesh(), TextureGenerator.TextureFromColourMap(colorMap, mapChunkSize, mapChunkSize));
+            
         }
+
     }
 
     /*유니티 에디터에서 스크립트 변경사항을 적용하기 위해서 로드되는데, 인스펙터 상 수정될 때 호출하여
      가질 수 없는 값을 막는데 사용한다.*/
-    private void OnValidate()
+    void OnValidate()
     {
-        if(mapWidth<1)
-        {
-            mapWidth = 1;
-        }
-        if(mapHeight<1)
-        {
-            mapHeight = 1;  
-        }
-
         if(lacunarity<1)
         {
             lacunarity = 1;
