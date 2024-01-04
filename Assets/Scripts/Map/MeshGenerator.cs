@@ -57,8 +57,9 @@ public static class MeshGenerator
     //높이에 대한 승수 역할을 하는 변수를 추가해줘야ㅕ함,. => 부동 높이 승수를 추가해줌
     //
     //높이를 가진 heightMap => noiseMap에 float형으로 정의 되어있음
-    public static MeshData GenerateTerrainMesh(float[,] heightMap,float heightMultiplier, AnimationCurve heightCurve,int levelOfDetail)
+    public static MeshData GenerateTerrainMesh(float[,] heightMap,float heightMultiplier, AnimationCurve _heightCurve,int levelOfDetail)
     {
+        AnimationCurve heightCurve=new AnimationCurve(_heightCurve.keys);
         //사각형을 이루는 정점의 개수(6개)
         //(witdh-1)*(height-1) 맵 크기에서 이루어지는 사각형 개수
         //즉 삼각형의 정점 수 (width-1)*(height-1)*6
@@ -79,10 +80,13 @@ public static class MeshGenerator
         for (int y=0; y<height; y+=meshSimplificationIncrement)
         {
             for(int x=0; x< width; x+=meshSimplificationIncrement) {
-                //유니티는 y가 높이임... 언리얼은 z가 높이고..0~1의 값이여서 높이 차가 별로 나지않음.
-                data.vertices[vertexIndex] = new Vector3(topLeftX + x, heightMap[x,y]* heightMultiplier* heightCurve.Evaluate(heightMap[x,y]), topLeftZ - y);
+               
+                    //유니티는 y가 높이임... 언리얼은 z가 높이고..0~1의 값이여서 높이 차가 별로 나지않음.
+               data.vertices[vertexIndex] = new Vector3(topLeftX + x, heightMap[x, y] * heightMultiplier * heightCurve.Evaluate(heightMap[x, y]), topLeftZ - y);
+
                 
-                if(y<height-1&&x<width-1)
+
+                if (y<height-1&&x<width-1)
                 {
                     data.AddTriangle(vertexIndex, vertexIndex + veticesPerLine + 1, vertexIndex + veticesPerLine);
                     data.AddTriangle(vertexIndex + veticesPerLine + 1, vertexIndex, vertexIndex + 1);
