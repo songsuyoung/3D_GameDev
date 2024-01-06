@@ -7,12 +7,13 @@ using System;
 
 public class EndlessTerrain : MonoBehaviour
 {
+    const float scale = 1f; //크기 조정
     const float viewerMoveThresholdForChunkUpdate = 25f;
     const float sqrtViwerMoveThresholdForChunkUpdate = viewerMoveThresholdForChunkUpdate* viewerMoveThresholdForChunkUpdate;
     //얼마나 멀리 떨어져 있는지에 대해 보여주기 위함 => 정적변수로 변경하여 런타임 수준에서 변경할 수 있도록함.
     public static float maxViewDist; 
     Dictionary<Vector2, TerrainChunk> terrainChunk;
-    List<TerrainChunk> terrainChunksVisibleLastUpdate;
+    static List<TerrainChunk> terrainChunksVisibleLastUpdate;
 
     public LODInfo[] detailLevels;
     public Material mapMaterial;
@@ -39,7 +40,7 @@ public class EndlessTerrain : MonoBehaviour
     {
 
         //상하(z축) 좌우(x축) 높이(y축) 
-        viewerPosition = new Vector2(viewer.position.x, viewer.position.z);
+        viewerPosition = new Vector2(viewer.position.x, viewer.position.z)/scale;
         
         if((viewerPositionOld-viewerPosition).sqrMagnitude> sqrtViwerMoveThresholdForChunkUpdate)
         {
@@ -74,10 +75,6 @@ public class EndlessTerrain : MonoBehaviour
                 {
                     //있으면 사용
                     terrainChunk[viewedChunkCoord].UpdateTerrainChunk();
-                    if (terrainChunk[viewedChunkCoord].IsVisible)
-                    {
-                        terrainChunksVisibleLastUpdate.Add(terrainChunk[viewedChunkCoord]);
-                    }
                 }
                 else
                 {
@@ -116,10 +113,11 @@ public class EndlessTerrain : MonoBehaviour
             meshObject = new GameObject("Terrain Chunk"); //새로운 오브젝트 생성.
             meshRenderer = meshObject.AddComponent<MeshRenderer>();
             meshFilter = meshObject.AddComponent<MeshFilter>();
-
+            
             meshRenderer.material = material;
             //generator 송신자로부터 메시를 전달받아서 적용할 예정.
-            meshObject.transform.position=positionV3;
+            meshObject.transform.position=positionV3* scale;
+            meshObject.transform.localScale = Vector3.one*scale;
             meshObject.transform.parent = parent;
             SetVisible(false);
             lodMeshs=new LODMesh[detailLevels.Length];
@@ -181,6 +179,8 @@ public class EndlessTerrain : MonoBehaviour
                             lodMesh.RequestMesh(mapData); //mapData에 해당하는 메시를 전달해달라고 요청
                         }
                     }
+                    //자기 자신이 청크이기 때문에 this객체를 넘김
+                    terrainChunksVisibleLastUpdate.Add(this);
                 }
                 SetVisible(isVisible);
             }
@@ -236,3 +236,5 @@ public class EndlessTerrain : MonoBehaviour
         public float visibleDstThreadhold;
     }
 }
+
+//E10, 9문제점 플레이어가 이동할 때 메시 청크가 남아있는 문제가 있음 => 플레이어 위치를 벗어난 모든 청크를 제거할듯?

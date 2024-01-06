@@ -28,6 +28,7 @@ public class MapGenerator : MonoBehaviour
         MeshMap,
     };
 
+    public Noise.NormalizeMode mode;
     public const int mapChunkSize = 241; //(241-1)/i;
     [Range(0,6)] //2의 곱셈
     public int editorPreviewLOD; //240의 인수, 1,2,4,6,8,10,12 => 자세하게 나옴
@@ -136,7 +137,7 @@ public class MapGenerator : MonoBehaviour
     MapData GenerateMapData(Vector2 centre)
     {
         //노이즈를 생성한 맵을 가져온다.
-        float[,] noiseMap=Noise.GenerateNoiseMap(mapChunkSize, mapChunkSize, seed, noiseScale, octaves,persistance,lacunarity, centre+offset);
+        float[,] noiseMap=Noise.GenerateNoiseMap(mapChunkSize, mapChunkSize, seed, noiseScale, octaves,persistance,lacunarity, centre+offset, mode);
 
         Color[] colorMap = new Color[mapChunkSize * mapChunkSize];
         for (int y=0;y< mapChunkSize; y++)
@@ -148,10 +149,13 @@ public class MapGenerator : MonoBehaviour
 
                 for(int i=0;i< regions.Length; i++) {
                     //높이가 작거나 같으면 색상 변경 
-                    if (currentHeight <= regions[i].height)
+                    if (currentHeight >= regions[i].height)
                     {
                         //(현재행)*열+현재열
                         colorMap[y * mapChunkSize + x] = regions[i].color;
+                    }
+                    else
+                    {
                         break;
                     }
                 }
