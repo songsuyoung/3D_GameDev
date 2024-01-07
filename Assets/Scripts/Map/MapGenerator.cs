@@ -26,6 +26,7 @@ public class MapGenerator : MonoBehaviour
         ColorMap,
         NoiseMap,
         MeshMap,
+        FalloffMap,
     };
 
     public Noise.NormalizeMode mode;
@@ -63,7 +64,16 @@ public class MapGenerator : MonoBehaviour
     Queue<MapThreadInfo<MapData>> mapDatas=new Queue<MapThreadInfo<MapData>>();   
     //mesh에 대한 정보
     Queue<MapThreadInfo<MeshData>> meshDatas=new Queue<MapThreadInfo<MeshData>>();
-    
+
+    //falloffmap 사용여부를 위한 bool변수
+    public bool useFalloff;
+
+    float[,] falloffMap;
+
+    private void Awake()
+    {
+        falloffMap = FalloffGenerator.GenerateFalloffMap(mapChunkSize);
+    }
     public void DrawMapInEditor()
     {
         MapData mapData = GenerateMapData(Vector2.zero);
@@ -81,6 +91,9 @@ public class MapGenerator : MonoBehaviour
             //컬러 색상 전달 , 높이값을 가진 noiseMap을 이용해 Mesh를 생성하여 그린다.
             mapDisplay.DrawMesh(MeshGenerator.GenerateTerrainMesh(mapData.heightMap, meshHeightMultiplier, meshHeightCurve, editorPreviewLOD).CreateMesh(), TextureGenerator.TextureFromColourMap(mapData.colorMap, mapChunkSize, mapChunkSize));
 
+        }else if(drawMode == DrawMode.FalloffMap)
+        {
+            mapDisplay.DrawTexture(TextureGenerator.TextureFromHeightMap(falloffMap));
         }
     }
 
@@ -144,6 +157,11 @@ public class MapGenerator : MonoBehaviour
         {
             for(int x=0;x< mapChunkSize; x++)
             {
+                if(useFalloff)
+                {
+                    //0~1사이의 값으로 정규화를 하기 위해서 
+                    noiseMap[x,y]= Mathf.Clamp01(noiseMap[x, y]-falloffMap[x,y]);
+                }
                 //regions에서 지정한 height과 같은 map은 색상을 변경
                 float currentHeight=noiseMap[x, y];
 
@@ -203,6 +221,7 @@ public class MapGenerator : MonoBehaviour
         {
             octaves = 0;
         }
+        falloffMap = FalloffGenerator.GenerateFalloffMap(mapChunkSize);
 
     }
     //스레드 정보 매핑과 같은 구조체, Thread 뿐만 아니라 다른 정보에서도 사용하기 위해 generic 하게 사용
