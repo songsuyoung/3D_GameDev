@@ -96,12 +96,15 @@ public class EndlessTerrain : MonoBehaviour
         
         MeshRenderer meshRenderer;
         MeshFilter meshFilter;
+
+        MeshCollider meshCollider;
         LODInfo[] detailLevels;
         LODMesh[] lodMeshs;
 
         MapData mapData;
         bool mapDataReceived;
 
+        LODMesh collisionLODMesh;
         int previousLODIndex = -1;
         public TerrainChunk(Vector2 coord,int size,LODInfo[] detailLevels,Transform parent,Material material)
         {
@@ -111,9 +114,11 @@ public class EndlessTerrain : MonoBehaviour
             Vector3 positionV3 = new Vector3(position.x, 0, position.y);
             bounds = new Bounds(position,Vector2.one*size);
             meshObject = new GameObject("Terrain Chunk"); //새로운 오브젝트 생성.
+            
             meshRenderer = meshObject.AddComponent<MeshRenderer>();
             meshFilter = meshObject.AddComponent<MeshFilter>();
-            
+            meshCollider = meshObject.AddComponent<MeshCollider>();
+
             meshRenderer.material = material;
             //generator 송신자로부터 메시를 전달받아서 적용할 예정.
             meshObject.transform.position=positionV3* scale;
@@ -125,6 +130,10 @@ public class EndlessTerrain : MonoBehaviour
             for(int i=0;i<detailLevels.Length;i++)
             {
                 lodMeshs[i] = new LODMesh(detailLevels[i].lod,UpdateTerrainChunk);
+                if (detailLevels[i].useForCollider)
+                {
+                    collisionLODMesh = lodMeshs[i];
+                }
             }
             //terrain에서 필요한 내용, 왜냐면 mesh 데이터 생성은 여기서 수행
             generator.RequestMapData(position,OnMapDataReceived); //chunk 생성할때마다 구독자 연결  
@@ -167,16 +176,28 @@ public class EndlessTerrain : MonoBehaviour
                     if (previousLODIndex != lodIndex)
                     {
                         LODMesh lodMesh = lodMeshs[lodIndex];
+
                         if (lodMesh.hasMesh)
                         {
                             previousLODIndex = lodIndex;
                             //현재 메시 설정
-                            meshFilter.mesh = lodMesh.mesh; ;
+                            meshFilter.mesh = lodMesh.mesh;
                         }
                         else if (!lodMesh.hasRequestedMesh)
                         {
                             //현재 요청 중이 아니라면 즉 없으면을 의미
                             lodMesh.RequestMesh(mapData); //mapData에 해당하는 메시를 전달해달라고 요청
+                        }
+                    }
+                    if (lodIndex == 0) //최고의 해상도로 렌더링.
+                    {
+                        if(collisionLODMesh.hasMesh)
+                        {
+                            meshCollider.sharedMesh = collisionLODMesh.mesh;
+                        }
+                        else if(!collisionLODMesh.hasRequestedMesh)
+                        {
+                            collisionLODMesh.RequestMesh(mapData);
                         }
                     }
                     //자기 자신이 청크이기 때문에 this객체를 넘김
@@ -234,6 +255,7 @@ public class EndlessTerrain : MonoBehaviour
         public int lod;
         //거리에 대한 부동소수점, 임계값을 넘어가면 낮은 수준의 lod로 변경 예정
         public float visibleDstThreadhold;
+        public bool useForCollider;
     }
 }
 

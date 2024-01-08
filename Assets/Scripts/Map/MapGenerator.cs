@@ -29,8 +29,8 @@ public class MapGenerator : MonoBehaviour
         FalloffMap,
     };
 
+
     public Noise.NormalizeMode mode;
-    public const int mapChunkSize = 241; //(241-1)/i;
     [Range(0,6)] //2의 곱셈
     public int editorPreviewLOD; //240의 인수, 1,2,4,6,8,10,12 => 자세하게 나옴
 
@@ -52,6 +52,7 @@ public class MapGenerator : MonoBehaviour
     [SerializeField]
     float meshHeightMultiplier;
 
+    public bool useFlatShading;
     public AnimationCurve meshHeightCurve; //LOD
     public bool autoUpdate;
 
@@ -60,6 +61,7 @@ public class MapGenerator : MonoBehaviour
     [SerializeField]
     TerrainType[] regions; //지역을 나타냄.
 
+    static MapGenerator instance;
     //맵에 대한 색상, 높이 값
     Queue<MapThreadInfo<MapData>> mapDatas=new Queue<MapThreadInfo<MapData>>();   
     //mesh에 대한 정보
@@ -73,6 +75,18 @@ public class MapGenerator : MonoBehaviour
     private void Awake()
     {
         falloffMap = FalloffGenerator.GenerateFalloffMap(mapChunkSize);
+    }
+    public static int mapChunkSize
+    {
+        get {
+            if(instance==null)
+                instance = FindObjectOfType<MapGenerator>();
+
+            if (instance.useFlatShading)
+                return 95;
+            else
+                return 239;
+        }
     }
     public void DrawMapInEditor()
     {
@@ -89,7 +103,7 @@ public class MapGenerator : MonoBehaviour
         else if (drawMode == DrawMode.MeshMap)
         {
             //컬러 색상 전달 , 높이값을 가진 noiseMap을 이용해 Mesh를 생성하여 그린다.
-            mapDisplay.DrawMesh(MeshGenerator.GenerateTerrainMesh(mapData.heightMap, meshHeightMultiplier, meshHeightCurve, editorPreviewLOD).CreateMesh(), TextureGenerator.TextureFromColourMap(mapData.colorMap, mapChunkSize, mapChunkSize));
+            mapDisplay.DrawMesh(MeshGenerator.GenerateTerrainMesh(mapData.heightMap, meshHeightMultiplier, meshHeightCurve, editorPreviewLOD, useFlatShading).CreateMesh(), TextureGenerator.TextureFromColourMap(mapData.colorMap, mapChunkSize, mapChunkSize));
 
         }else if(drawMode == DrawMode.FalloffMap)
         {
@@ -112,7 +126,7 @@ public class MapGenerator : MonoBehaviour
     void MeshDataThread(MapData mapData,int lod,Action<MeshData> callback)
     {
         //메시 데이터 생성
-        MeshData meshData = MeshGenerator.GenerateTerrainMesh(mapData.heightMap, meshHeightMultiplier, meshHeightCurve, lod);
+        MeshData meshData = MeshGenerator.GenerateTerrainMesh(mapData.heightMap, meshHeightMultiplier, meshHeightCurve, lod, useFlatShading);
         lock(meshDatas)
         {
             //생성된 메시 데이터를 스레드 하나만 건드릴 수 있도록 롹해놓음
@@ -150,7 +164,8 @@ public class MapGenerator : MonoBehaviour
     MapData GenerateMapData(Vector2 centre)
     {
         //노이즈를 생성한 맵을 가져온다.
-        float[,] noiseMap=Noise.GenerateNoiseMap(mapChunkSize, mapChunkSize, seed, noiseScale, octaves,persistance,lacunarity, centre+offset, mode);
+        //borderSize를 추가했기 때문에 vertice + 2를 더한 값 전달 
+        float[,] noiseMap=Noise.GenerateNoiseMap(mapChunkSize +2 , mapChunkSize +2 , seed, noiseScale, octaves,persistance,lacunarity, centre+offset, mode);
 
         Color[] colorMap = new Color[mapChunkSize * mapChunkSize];
         for (int y=0;y< mapChunkSize; y++)
@@ -253,3 +268,10 @@ public struct MapData
         this.colorMap = colorMap;
     }
 }
+
+/*
+ E12 법선 벡터를 사용하는 이유
+=> 각 메쉬의 TerrainChunk 가장자리 부분이 서로 안맞는 현상이 있는데, 그 이유는 중앙의 법선과 거리가 멀어서
+인접한 법선을 이용하기 때문에 조명의 차이가 발생하게 된다.
+이를 해결하기 위해서 각 정점의 법선 벡터를 알아야한다.
+ */
