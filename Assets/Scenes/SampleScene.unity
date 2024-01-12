@@ -154,7 +154,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   targetPlayer: {fileID: 542369473}
   playerCamera: {fileID: 476053878}
-  sensitivity: 1000
+  sensitivity: 800
   followSpeed: 10
 --- !u!4 &1160023
 Transform:
@@ -2260,9 +2260,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b861a1246d1746b4ab4718b6254fd77d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  speed: 5
+  speed: 7
   jumpHeight: 3
-  rotateSpeed: 5
   playerCamera: {fileID: 476053878}
 --- !u!4 &4107334561571045962
 Transform:
