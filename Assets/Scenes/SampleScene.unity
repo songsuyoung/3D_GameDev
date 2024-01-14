@@ -2265,7 +2265,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   speed: 5
-  jumpHeight: 3
+  jumpPower: 3
   playerCamera: {fileID: 476053878}
 --- !u!4 &4107334561571045962
 Transform:

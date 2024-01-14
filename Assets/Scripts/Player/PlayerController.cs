@@ -17,13 +17,14 @@ public class PlayerController : MonoBehaviour
     [SerializeField]
     float speed;
     [SerializeField]
-    float jumpHeight = 3f;
+    float jumpPower;
     [SerializeField]
     Transform playerCamera;
 
 
     Vector3 moveDirection;
     Vector3 dir;
+
     private void Start()
     {
         player = GameObject.FindWithTag("Player").transform;
@@ -56,18 +57,26 @@ public class PlayerController : MonoBehaviour
             cameraRight.y = 0f;
 
             moveDirection = (cameraForward.normalized * dir.z + cameraRight.normalized * dir.x).normalized;
-            
+
             if (moveDirection != Vector3.zero)
             {
                 Quaternion toRotation = Quaternion.LookRotation(moveDirection, Vector3.up);
-                player.rotation = Quaternion.RotateTowards(player.rotation, toRotation, 360f* Time.deltaTime);
+                //부드러운 이동보다 즉각적인 회전을 수행하기 위해서 Quaternion.RotateTowards ->Quaternion.Slerp로 변경
+                player.rotation = Quaternion.Slerp(player.rotation, toRotation, 60f * Time.deltaTime);
             }
 
             float offset = 0.5f + Input.GetAxis("Sprint") * 0.5f; //Shift 누를 시 스피드 추가 예정
 
+            if (Input.GetButton("Jump"))
+            {
+                moveDirection.y = jumpPower;
+                //playerAnimator.SetTrigger("isJump");
+            }
+            
             playerAnimator.SetFloat("Horizontal", moveDirection.x * offset);
             playerAnimator.SetFloat("Vertical", moveDirection.z * offset);
         }
+
         moveDirection.y += Physics.gravity.y * Time.deltaTime;
         // 이동
         characterController.Move(moveDirection * speed * Time.deltaTime);
