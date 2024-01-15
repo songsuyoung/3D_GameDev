@@ -62,7 +62,8 @@ public class PlayerController : MonoBehaviour
             {
                 Quaternion toRotation = Quaternion.LookRotation(moveDirection, Vector3.up);
                 //부드러운 이동보다 즉각적인 회전을 수행하기 위해서 Quaternion.RotateTowards ->Quaternion.Slerp로 변경
-                player.rotation = Quaternion.Slerp(player.rotation, toRotation, 60f * Time.deltaTime);
+                //player.rotation = Quaternion.Slerp(player.rotation, toRotation, 60f * Time.deltaTime);
+                player.rotation = toRotation;
             }
 
             float offset = 0.5f + Input.GetAxis("Sprint") * 0.5f; //Shift 누를 시 스피드 추가 예정
